@@ -13,16 +13,25 @@ const StepTracking = () => {
   const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
   const [todaySteps, setTodayStepsLocal] = useState(null);
   const [weekSteps, setWeekStepsLocal] = useState(null);
+  const [eventActive, setEventActive] = useState(true);
 
   useEffect(() => {
     const initializeStepTracking = async () => {
       const storedDate = await fetchAndStoreInstallationDate();
-      fetchStepData(storedDate);
-      await registerBackgroundFetch();
+      const { eventStart, eventEnd } = initializeEventDuration();
+      checkEventStatus(eventStart, eventEnd);
+      if (eventActive) {
+        fetchStepData(storedDate);
+        await registerBackgroundFetch(eventStart, eventEnd);
+      }
     };
 
     initializeStepTracking();
-  }, []);
+
+    return () => {
+      clearInterval(fetchInterval);
+    };
+  }, [eventActive]);
 
   const fetchAndStoreInstallationDate = async () => {
     try {
@@ -42,6 +51,26 @@ const StepTracking = () => {
     }
   };
 
+  const initializeEventDuration = () => {
+    const now = new Date();
+
+    const eventStart = new Date(now);
+    eventStart.setHours(9, 0, 0, 0); // Set start time to 9 AM today
+
+    const eventEnd = new Date(eventStart);
+    eventEnd.setDate(eventEnd.getDate() + 2); // End 2 days later at 5 PM
+    eventEnd.setHours(17, 0, 0, 0); // Set end time to 5 PM two days later
+
+    return { eventStart, eventEnd };
+  };
+
+  const checkEventStatus = (eventStart, eventEnd) => {
+    const now = new Date();
+    if (now < eventStart || now > eventEnd) {
+      setEventActive(false);
+    }
+  };
+
   const fetchStepData = async (installationDate) => {
     const currentDate = new Date();
 
@@ -57,11 +86,8 @@ const StepTracking = () => {
       setIsPedometerAvailable(isAvailable ? 'available' : 'unavailable');
 
       if (isAvailable) {
-        // Fetch today's steps and add the current steps to it
+        // Fetch today's steps
         const todayStepResult = await Pedometer.getStepCountAsync(startOfToday, currentDate);
-        const currentSteps = todayStepResult.steps;
-
-        // Update today's steps with the current steps
         setTodaySteps(todayStepResult.steps);
         setTodayStepsLocal(todayStepResult.steps);
 
@@ -70,7 +96,7 @@ const StepTracking = () => {
         setWeekSteps(weekStepResult.steps);
         setWeekStepsLocal(weekStepResult.steps);
 
-        // Save step data to AsyncStorage to be accessed in background task
+        // Save step data to AsyncStorage
         await AsyncStorage.setItem('todaySteps', todayStepResult.steps.toString());
         await AsyncStorage.setItem('weekSteps', weekStepResult.steps.toString());
       }
@@ -79,14 +105,28 @@ const StepTracking = () => {
     }
   };
 
-  const registerBackgroundFetch = async () => {
+  let fetchInterval;
+
+  const registerBackgroundFetch = async (eventStart, eventEnd) => {
     try {
       await BackgroundFetch.registerTaskAsync(BACKGROUND_FETCH_TASK, {
-        minimumInterval: 60 * 15, // Fetch every 15 minutes
+        minimumInterval: 60 * 1, // Fetch every 1 minutes
         stopOnTerminate: false,   // Continue even after the app is terminated
         startOnBoot: true,        // Start background fetch when the device boots
       });
       console.log("Background fetch registered successfully");
+
+      // Set interval to fetch steps every 5 minutes during event duration
+      fetchInterval = setInterval(async () => {
+        const now = new Date();
+        if (now >= eventStart && now <= eventEnd) {
+          await fetchStepData(await fetchAndStoreInstallationDate());
+        } else {
+          clearInterval(fetchInterval);
+          setEventActive(false);
+        }
+      }, 6000); 
+
     } catch (error) {
       console.error("Error registering background fetch:", error);
     }
@@ -96,8 +136,14 @@ const StepTracking = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Step Tracking</Text>
       <Text>Pedometer is {isPedometerAvailable}</Text>
-      <Text>Today's Steps: {todaySteps !== null ? todaySteps : 'Loading...'}</Text>
-      <Text>Current Week's Steps: {weekSteps !== null ? weekSteps : 'Loading...'}</Text>
+      {eventActive ? (
+        <>
+          <Text>Today's Steps: {todaySteps !== null ? todaySteps : 'Loading...'}</Text>
+          <Text>Current Week's Steps: {weekSteps !== null ? weekSteps : 'Loading...'}</Text>
+        </>
+      ) : (
+        <Text>The event has ended. No more step data will be fetched.</Text>
+      )}
     </View>
   );
 };

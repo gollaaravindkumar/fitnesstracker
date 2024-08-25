@@ -14,14 +14,23 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.project1"
+      "bundleIdentifier": "com.anonymous.project1",
+      "infoPlist": {
+        "UIBackgroundModes": ["fetch", "processing"],
+        "NSMotionUsageDescription": "This app uses your motion data to track steps."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
+
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": ["ACTIVITY_RECOGNITION"],
+      "useNextNotificationsApi": true
+      
     },
+   
     "web": {
       "bundler": "metro",
       "output": "static",

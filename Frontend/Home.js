@@ -11,8 +11,8 @@ const BACKGROUND_FETCH_TASK = 'background-fetch-task';
 const StepTracking = () => {
   const { setTodaySteps, setWeekSteps } = useContext(StepsContext);
   const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
-  const [todaySteps, setTodayStepsLocal] = useState(null);
-  const [weekSteps, setWeekStepsLocal] = useState(null);
+  const [todaySteps, setTodayStepsLocal] = useState(0);
+  const [weekSteps, setWeekStepsLocal] = useState(0);
   const [eventActive, setEventActive] = useState(true);
 
   useEffect(() => {
@@ -21,15 +21,14 @@ const StepTracking = () => {
       const { eventStart, eventEnd } = initializeEventDuration();
       checkEventStatus(eventStart, eventEnd);
       if (eventActive) {
-        fetchStepData(storedDate);
+        await startPedometer();
         await registerBackgroundFetch(eventStart, eventEnd);
       }
     };
 
     initializeStepTracking();
-
     return () => {
-      clearInterval(fetchInterval);
+      Pedometer.stopPedometerUpdatesAsync();
     };
   }, [eventActive]);
 
@@ -71,61 +70,45 @@ const StepTracking = () => {
     }
   };
 
-  const fetchStepData = async (installationDate) => {
-    const currentDate = new Date();
-
-    const startOfToday = new Date(currentDate);
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const startOfWeek = new Date(currentDate);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-
+  const startPedometer = async () => {
     try {
       const isAvailable = await Pedometer.isAvailableAsync();
       setIsPedometerAvailable(isAvailable ? 'available' : 'unavailable');
 
       if (isAvailable) {
-        // Fetch today's steps
-        const todayStepResult = await Pedometer.getStepCountAsync(startOfToday, currentDate);
-        setTodaySteps(todayStepResult.steps);
-        setTodayStepsLocal(todayStepResult.steps);
+        Pedometer.watchStepCount(result => {
+          setTodaySteps(prev => prev + result.steps);
+          setTodayStepsLocal(prev => prev + result.steps);
+          setWeekSteps(prev => prev + result.steps);
+          setWeekStepsLocal(prev => prev + result.steps);
 
-        // Fetch weekly steps
-        const weekStepResult = await Pedometer.getStepCountAsync(startOfWeek, currentDate);
-        setWeekSteps(weekStepResult.steps);
-        setWeekStepsLocal(weekStepResult.steps);
-
-        // Save step data to AsyncStorage
-        await AsyncStorage.setItem('todaySteps', todayStepResult.steps.toString());
-        await AsyncStorage.setItem('weekSteps', weekStepResult.steps.toString());
+          AsyncStorage.setItem('todaySteps', (todaySteps + result.steps).toString());
+          AsyncStorage.setItem('weekSteps', (weekSteps + result.steps).toString());
+        });
       }
     } catch (error) {
-      console.error("Error fetching step data:", error);
+      console.error("Error initializing pedometer:", error);
     }
   };
-
-  let fetchInterval;
 
   const registerBackgroundFetch = async (eventStart, eventEnd) => {
     try {
       await BackgroundFetch.registerTaskAsync(BACKGROUND_FETCH_TASK, {
-        minimumInterval: 60 * 1, // Fetch every 1 minutes
+        minimumInterval: 60 * 1, // Fetch every 1 minute
         stopOnTerminate: false,   // Continue even after the app is terminated
         startOnBoot: true,        // Start background fetch when the device boots
       });
       console.log("Background fetch registered successfully");
 
-      // Set interval to fetch steps every 5 minutes during event duration
-      fetchInterval = setInterval(async () => {
+      const fetchInterval = setInterval(async () => {
         const now = new Date();
         if (now >= eventStart && now <= eventEnd) {
-          await fetchStepData(await fetchAndStoreInstallationDate());
+          // Background fetch logic if needed
         } else {
           clearInterval(fetchInterval);
           setEventActive(false);
         }
-      }, 6000); 
+      }, 60000); // Update every minute
 
     } catch (error) {
       console.error("Error registering background fetch:", error);
@@ -167,18 +150,7 @@ export default StepTracking;
 // Task Manager to handle background fetch
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   try {
-    const storedDate = await AsyncStorage.getItem('installationDate');
-    const installationDate = new Date(storedDate);
-    const currentDate = new Date();
-    const startOfToday = new Date(currentDate);
-    startOfToday.setHours(0, 0, 0, 0);
-    const startOfWeek = new Date(currentDate);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-    const todayStepResult = await Pedometer.getStepCountAsync(startOfToday, currentDate);
-    const weekStepResult = await Pedometer.getStepCountAsync(startOfWeek, currentDate);
-    await AsyncStorage.setItem('todaySteps', todayStepResult.steps.toString());
-    await AsyncStorage.setItem('weekSteps', weekStepResult.steps.toString());
+    // Implement background logic here if needed
     console.log('Background fetch task executed');
     return BackgroundFetch.Result.NewData;
   } catch (error) {

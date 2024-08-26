@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-const Rank = () => {
+const Ios = () => {
   return (
     <View>
-      <Text>Rank</Text>
+      <Text>Ios</Text>
     </View>
   )
 }
 
-export default Rank
+export default Ios
 
 const styles = StyleSheet.create({})

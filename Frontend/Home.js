@@ -147,7 +147,6 @@ const styles = StyleSheet.create({
 
 export default StepTracking;
 
-// Task Manager to handle background fetch
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   try {
     // Implement background logic here if needed

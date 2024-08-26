@@ -1,6 +1,5 @@
 import { FlatList, StyleSheet, Text, View, Image } from 'react-native';
 import React from 'react';
-
 const MainUser = () => {
   const LeaderBoardData = [
     {
@@ -10,7 +9,6 @@ const MainUser = () => {
       image: "https://randomuser.me/api/portraits/men/1.jpg",
     }
   ];
-
   return (
     <View style={styles.container}>
       <FlatList
@@ -68,5 +66,4 @@ const styles = StyleSheet.create({
     color: '#555',
   },
 });
-
 export default MainUser;

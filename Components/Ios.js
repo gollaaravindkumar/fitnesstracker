@@ -72,14 +72,11 @@ const StepTracking = () => {
 
   const fetchStepData = async (installationDate) => {
     const currentDate = new Date();
-
     const startOfToday = new Date(currentDate);
     startOfToday.setHours(0, 0, 0, 0);
-
     const startOfWeek = new Date(currentDate);
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
-
     try {
       const isAvailable = await Pedometer.isAvailableAsync();
       setIsPedometerAvailable(isAvailable ? 'available' : 'unavailable');

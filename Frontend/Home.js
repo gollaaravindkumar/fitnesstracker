@@ -7,23 +7,17 @@ const Home = () => {
   const [step, setStep] = useState(false);
   if (Platform.OS === 'ios') {
     return (
-      <View style={styles.container}>
-        <Ios />
-      </View>
+      
+        <Ios/>
+
     );
   } else {
     return (
-      <View style={styles.container}>
+      < >
         {step ? <Ios /> : <AndroidStep />}
-      </View>
+      </>
     );
   }
 };
 export default Home;
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+

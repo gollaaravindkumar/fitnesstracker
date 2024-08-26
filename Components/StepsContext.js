@@ -1,19 +1,15 @@
+// StepsContext.js
 import React, { createContext, useState } from 'react';
 
-// Create the context
-const StepsContext = createContext();
+export const StepsContext = createContext();
 
-// Create a provider component
-const StepsProvider = ({ children }) => {
+export const StepsProvider = ({ children }) => {
   const [todaySteps, setTodaySteps] = useState(0);
-  const [weekSteps, setWeekSteps] = useState(0);
-  const [monthSteps, setMonthSteps] = useState(0);
+  const [weekSteps, setWeekSteps] = useState([0, 0, 0, 0, 0, 0, 0]); // Initialize with 7 days
 
   return (
-    <StepsContext.Provider value={{ todaySteps, setTodaySteps, weekSteps, setWeekSteps, monthSteps, setMonthSteps }}>
+    <StepsContext.Provider value={{ todaySteps, setTodaySteps, weekSteps, setWeekSteps }}>
       {children}
     </StepsContext.Provider>
   );
 };
-
-export { StepsProvider, StepsContext };

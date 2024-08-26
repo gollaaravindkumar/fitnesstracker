@@ -6,7 +6,7 @@ import { StepsContext } from '../Components/StepsContext';
 const screenWidth = Dimensions.get('window').width;
 
 const MyActivity = () => {
-  const { weekSteps ,todaySteps} = useContext(StepsContext);
+  const { weekSteps } = useContext(StepsContext);
   const validatedWeekSteps = Array.isArray(weekSteps) && weekSteps.length === 7
     ? weekSteps
     : [0, 0, 0, 0, 0, 0, 0]; // Default value if data is invalid
@@ -16,39 +16,28 @@ const MyActivity = () => {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
       {
-        data: [weekSteps], // Corrected line
+        data: validatedWeekSteps, // Use validated weekly steps data
       },
     ],
   };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My Activity</Text>
       <BarChart
         data={data}
-        width={screenWidth - 32}
+        width={screenWidth - 32} // Subtract padding
         height={220}
-        fromZero={true} // Start the y-axis from zero
+        yAxisLabel=""
         chartConfig={{
           backgroundColor: '#fff',
-          backgroundGradientFrom: '#fff',
-          backgroundGradientTo: '#fff',
+          backgroundGradientFrom: '#fb8c00',
+          backgroundGradientTo: '#ffc107',
           decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
-          labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-          style: {
-            borderRadius: 16,
-          },
-          propsForBars: {
-            borderRadius: 6,
-            color: '#ffa726',
-          },
-          propsForLabels: {
-            fontSize: 12,
-            color: '#000',
-          },
-          yAxisLabel: '',
-          yAxisSuffix: 'k',
-          yAxisInterval: 1, // Controls the spacing between y-axis labels
+          color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+          labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+          barPercentage: 0.5,
+          useShadowColorFromDataset: false,
         }}
         style={styles.chart}
       />
@@ -68,7 +57,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   chart: {
+    marginVertical: 8,
     borderRadius: 16,
   },
 });
+
 export default MyActivity;

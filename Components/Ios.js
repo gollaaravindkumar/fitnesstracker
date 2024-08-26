@@ -1,133 +1,150 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Button, StyleSheet, Platform } from 'react-native';
 import { Pedometer } from 'expo-sensors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { StepsContext } from '../Components/StepsContext';
 
 const BACKGROUND_FETCH_TASK = 'background-fetch-task';
 
+TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
+  try {
+    console.log("Background fetch task running");
+    return BackgroundFetch.BackgroundFetchResult.NewData;
+  } catch (error) {
+    console.error("Error during background fetch task:", error);
+    return BackgroundFetch.BackgroundFetchResult.Failed;
+  }
+});
+
 const StepTracking = () => {
   const { setTodaySteps, setWeekSteps } = useContext(StepsContext);
   const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
-  const [todaySteps, setTodayStepsLocal] = useState(null);
-  const [weekSteps, setWeekStepsLocal] = useState(null);
-  const [eventActive, setEventActive] = useState(true);
+  const [todaySteps, setTodayStepsLocal] = useState(0);
+  const [weeklySteps, setWeeklySteps] = useState([]);
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const [rangeSteps, setRangeSteps] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
     const initializeStepTracking = async () => {
-      const storedDate = await fetchAndStoreInstallationDate();
-      const { eventStart, eventEnd } = initializeEventDuration();
-      checkEventStatus(eventStart, eventEnd);
-      if (eventActive) {
-        fetchStepData(storedDate);
-        await registerBackgroundFetch(eventStart, eventEnd);
-      }
+      await registerBackgroundFetch();
+      const eventStartTime = await fetchAndStoreEventStartTime();
+      await fetchWeeklyStepData(eventStartTime);
+      await fetchTotalSteps();
     };
-
     initializeStepTracking();
-    return () => {
-      clearInterval(fetchInterval);
-    };
-  }, [eventActive]);
+  }, []);
 
-  const fetchAndStoreInstallationDate = async () => {
+  const fetchAndStoreEventStartTime = async () => {
     try {
-      const storedDate = await AsyncStorage.getItem('installationDate');
-      let installationDate;
+      const storedEventStartTime = await AsyncStorage.getItem('eventStartTime');
+      let eventStartTime;
 
-      if (!storedDate) {
-        installationDate = new Date();
-        await AsyncStorage.setItem('installationDate', installationDate.toISOString());
+      if (!storedEventStartTime) {
+        eventStartTime = new Date();
+        eventStartTime.setHours(0, 0, 0, 0);
+        await AsyncStorage.setItem('eventStartTime', eventStartTime.toISOString());
       } else {
-        installationDate = new Date(storedDate);
+        eventStartTime = new Date(storedEventStartTime);
       }
-
-      return installationDate;
+      return eventStartTime;
     } catch (error) {
-      console.error("Error accessing installation date:", error);
+      console.error("Error accessing event start time:", error);
     }
   };
 
-  const initializeEventDuration = () => {
-    const now = new Date();
-
-    const eventStart = new Date(now);
-    eventStart.setHours(9, 0, 0, 0); // Set start time to 9 AM today
-
-    const eventEnd = new Date(eventStart);
-    eventEnd.setDate(eventEnd.getDate() + 2); // End 2 days later at 5 PM
-    eventEnd.setHours(17, 0, 0, 0); // Set end time to 5 PM two days later
-
-    return { eventStart, eventEnd };
-  };
-
-  const checkEventStatus = (eventStart, eventEnd) => {
-    const now = new Date();
-    if (now < eventStart || now > eventEnd) {
-      setEventActive(false);
-    }
-  };
-
-  const fetchStepData = async (installationDate) => {
-    const currentDate = new Date();
-
-    const startOfToday = new Date(currentDate);
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const startOfWeek = new Date(currentDate);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-
+  const fetchWeeklyStepData = async (eventStartTime) => {
     try {
       const isAvailable = await Pedometer.isAvailableAsync();
       setIsPedometerAvailable(isAvailable ? 'available' : 'unavailable');
 
       if (isAvailable) {
-        // Fetch today's steps
-        const todayStepResult = await Pedometer.getStepCountAsync(startOfToday, currentDate);
-        setTodaySteps(todayStepResult.steps);
-        setTodayStepsLocal(todayStepResult.steps);
+        const currentDate = new Date();
+        const startOfWeek = new Date(eventStartTime);
+        startOfWeek.setDate(eventStartTime.getDate() - eventStartTime.getDay() + 1); // Adjust to Monday
+        startOfWeek.setHours(0, 0, 0, 0);
 
-        // Fetch weekly steps
-        const weekStepResult = await Pedometer.getStepCountAsync(startOfWeek, currentDate);
-        setWeekSteps(weekStepResult.steps);
-        setWeekStepsLocal(weekStepResult.steps);
+        const stepsPerDay = [];
+        for (let i = 0; i < 7; i++) {
+          const dayStart = new Date(startOfWeek);
+          dayStart.setDate(startOfWeek.getDate() + i);
+          const dayEnd = new Date(dayStart);
+          dayEnd.setHours(23, 59, 59, 999);
 
-        // Save step data to AsyncStorage
-        await AsyncStorage.setItem('todaySteps', todayStepResult.steps.toString());
-        await AsyncStorage.setItem('weekSteps', weekStepResult.steps.toString());
+          const stepResult = await Pedometer.getStepCountAsync(dayStart, dayEnd);
+          stepsPerDay.push({
+            day: dayStart.toLocaleDateString('en-US', { weekday: 'short' }),
+            steps: stepResult.steps,
+          });
+        }
+
+        setWeeklySteps(stepsPerDay);
+        setWeekSteps(stepsPerDay.map(day => day.steps)); // Update StepsContext
+        await AsyncStorage.setItem('weeklySteps', JSON.stringify(stepsPerDay));
       }
     } catch (error) {
-      console.error("Error fetching step data:", error);
+      console.error("Error fetching weekly step data:", error);
     }
   };
 
-  let fetchInterval;
-
-  const registerBackgroundFetch = async (eventStart, eventEnd) => {
+  const fetchTotalSteps = async () => {
     try {
+      const isAvailable = await Pedometer.isAvailableAsync();
+      if (isAvailable) {
+        const eventStartTime = await fetchAndStoreEventStartTime();
+        const currentDate = new Date();
+        const stepResult = await Pedometer.getStepCountAsync(eventStartTime, currentDate);
+        setTodayStepsLocal(stepResult.steps);
+        setTodaySteps(stepResult.steps); // Update StepsContext
+      }
+    } catch (error) {
+      console.error("Error fetching total steps:", error);
+    }
+  };
+
+  const fetchStepsBetweenDates = async (start, end) => {
+    try {
+      const isAvailable = await Pedometer.isAvailableAsync();
+      if (isAvailable) {
+        const stepResult = await Pedometer.getStepCountAsync(start, end);
+        setRangeSteps(stepResult.steps);
+      }
+    } catch (error) {
+      console.error("Error fetching steps between dates:", error);
+    }
+  };
+
+  const registerBackgroundFetch = async () => {
+    try {
+      const status = await BackgroundFetch.getStatusAsync();
+      if (status !== BackgroundFetch.Status.Available) {
+        console.error("Background fetch is not available");
+        return;
+      }
+
       await BackgroundFetch.registerTaskAsync(BACKGROUND_FETCH_TASK, {
-        minimumInterval: 60 * 1, // Fetch every 1 minute
-        stopOnTerminate: false,   // Continue even after the app is terminated
-        startOnBoot: true,        // Start background fetch when the device boots
+        minimumInterval: 60 * 15, // 15 minutes
+        stopOnTerminate: false, // iOS only
+        startOnBoot: true, // Android only
       });
       console.log("Background fetch registered successfully");
-
-      // Set interval to fetch steps every 5 minutes during event duration
-      fetchInterval = setInterval(async () => {
-        const now = new Date();
-        if (now >= eventStart && now <= eventEnd) {
-          await fetchStepData(await fetchAndStoreInstallationDate());
-        } else {
-          clearInterval(fetchInterval);
-          setEventActive(false);
-        }
-      }, 60000); // Update every minute
-
     } catch (error) {
       console.error("Error registering background fetch:", error);
+    }
+  };
+
+  const onDateChange = (event, selectedDate, type) => {
+    const currentDate = selectedDate || new Date();
+    setShowPicker(Platform.OS === 'ios');
+    if (type === 'start') {
+      setStartDate(currentDate);
+    } else {
+      setEndDate(currentDate);
+      fetchStepsBetweenDates(startDate, currentDate);
     }
   };
 
@@ -135,14 +152,42 @@ const StepTracking = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Step Tracking</Text>
       <Text>Pedometer is {isPedometerAvailable}</Text>
-      {eventActive ? (
-        <>
-          <Text>Today's Steps: {todaySteps !== null ? todaySteps : 'Loading...'}</Text>
-          <Text>Current Week's Steps: {weekSteps !== null ? weekSteps : 'Loading...'}</Text>
-        </>
-      ) : (
-        <Text>The event has ended. No more step data will be fetched.</Text>
+
+      <Button title="Pick Start Date" onPress={() => setShowPicker('start')} />
+      <Button title="Pick End Date" onPress={() => setShowPicker('end')} />
+
+      {showPicker === 'start' && (
+        <DateTimePicker
+          testID="startDateTimePicker"
+          value={startDate}
+          mode="date"
+          is24Hour={true}
+          display="default"
+          onChange={(event, selectedDate) => onDateChange(event, selectedDate, 'start')}
+        />
       )}
+
+      {showPicker === 'end' && (
+        <DateTimePicker
+          testID="endDateTimePicker"
+          value={endDate}
+          mode="date"
+          is24Hour={true}
+          display="default"
+          onChange={(event, selectedDate) => onDateChange(event, selectedDate, 'end')}
+        />
+      )}
+
+      {rangeSteps !== null && (
+        <Text>Steps between {startDate.toDateString()} and {endDate.toDateString()}: {rangeSteps}</Text>
+      )}
+
+      <Text>Steps this week:</Text>
+      {weeklySteps.map((day, index) => (
+        <Text key={index}>{day.day}: {day.steps} steps</Text>
+      ))}
+
+      <Text>Total steps since the event started: {todaySteps}</Text>
     </View>
   );
 };
@@ -151,42 +196,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    padding: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 16,
   },
 });
 
 export default StepTracking;
-
-// Task Manager to handle background fetch
-TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
-  try {
-    const storedDate = await AsyncStorage.getItem('installationDate');
-    const installationDate = new Date(storedDate);
-    const currentDate = new Date();
-
-    const startOfToday = new Date(currentDate);
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const startOfWeek = new Date(currentDate);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const todayStepResult = await Pedometer.getStepCountAsync(startOfToday, currentDate);
-    const weekStepResult = await Pedometer.getStepCountAsync(startOfWeek, currentDate);
-
-    await AsyncStorage.setItem('todaySteps', todayStepResult.steps.toString());
-    await AsyncStorage.setItem('weekSteps', weekStepResult.steps.toString());
-
-    console.log('Background fetch task executed');
-    return BackgroundFetch.Result.NewData;
-  } catch (error) {
-    console.error("Error executing background fetch task:", error);
-    return BackgroundFetch.Result.Failed;
-  }
-});

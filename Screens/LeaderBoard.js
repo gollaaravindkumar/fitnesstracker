@@ -20,7 +20,7 @@ import moment from 'moment';
 const LeaderBoard = () => {
   const { todaySteps, weekSteps } = useContext(StepsContext);
 
-  const isValidWeekSteps = Array.isArray(weekSteps) && weekSteps.length === 7 && weekSteps.every(item => typeof item === 'number');
+  const isValidWeekSteps = Array.isArray(weekSteps) && weekSteps.length === 7;
 
   const [selected, setSelected] = useState("Rank");
   const [isStartPickerVisible, setStartPickerVisible] = useState(false);
@@ -29,7 +29,7 @@ const LeaderBoard = () => {
   const [endDate, setEndDate] = useState(moment().endOf('day').toDate());
 
   const LeaderBoardData = [
-    { id: 1, name: "Harsha", steps: weekSteps, image: "https://randomuser.me/api/portraits/men/1.jpg" },
+    { id: 1, name: "Harsha", steps: todaySteps, image: "https://randomuser.me/api/portraits/men/1.jpg" },
     { id: 2, name: "John Doe", steps: 600, image: "https://randomuser.me/api/portraits/men/5.jpg" },
     { id: 3, name: "Jane Smith", steps: 500, image: "https://randomuser.me/api/portraits/women/6.jpg" },
     { id: 4, name: "Chris Evans", steps: 400, image: "https://randomuser.me/api/portraits/men/7.jpg" },
@@ -203,12 +203,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
     justifyContent: 'center',
     alignItems: 'center',
-    gap:20
   },
   rankText: {
     color: '#fff',
     fontSize: 16,
-    
   },
   userDetails: {
     flexDirection: 'row',

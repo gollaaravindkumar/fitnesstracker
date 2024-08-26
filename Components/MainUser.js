@@ -8,7 +8,7 @@ const MainUser = () => {
     {
       id: 1,
       name: "Harsha",
-      steps: weekSteps, // High value to ensure Harsha is always at the top
+      steps: todaySteps, // High value to ensure Harsha is always at the top
       image: "https://randomuser.me/api/portraits/men/1.jpg",
     }
   ];

@@ -34,13 +34,16 @@ const SignUpScreen = () => {
 
     try {
       // Send user data along with device information to your API
-      const response = await axios.post('https://your-api-url.com/signup', {
-        type: 'lpadmin',
+      const response = await axios.post('https://ngage.nexalink.co/health/users/signup', {
         first_name: firstName,
         last_name: lastName,
         email: email,
         password: password,
         device_info: deviceInfo,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.status === 200) {
@@ -54,7 +57,6 @@ const SignUpScreen = () => {
       Alert.alert('Error', 'An error occurred during sign up. Please try again.');
     }
   };
-
   return (
     <LinearGradient
       colors={['#405D72', '#758694']}

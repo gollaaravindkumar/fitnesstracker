@@ -1,4 +1,4 @@
-// StepsContext.js
+
 import React, { createContext, useState } from 'react';
 
 export const StepsContext = createContext();

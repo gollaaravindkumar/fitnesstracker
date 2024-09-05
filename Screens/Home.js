@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Alert, StyleSheet, Text, View, FlatList, Dimensions, Button } from 'react-native';
+import { Alert, StyleSheet, Text, View, FlatList, Dimensions, Button, Platform } from 'react-native';
 import { Pedometer } from 'expo-sensors';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import Constants from 'expo-constants'; // Import for checking the environment
+import AppleHealthKit from 'react-native-health'; // Import for native iOS HealthKit
 
 const { width } = Dimensions.get("window");
 
 export default function App() {
-
   const navigation = useNavigation();
   const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
   const [currentStepCount, setCurrentStepCount] = useState(0);
@@ -19,7 +20,7 @@ export default function App() {
   const [userData, setUserData] = useState(null);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
   const [intervalId, setIntervalId] = useState(null);
-  
+
   const pedometerSubscriptionRef = useRef(null);
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function App() {
           console.error('Error reading user data from AsyncStorage:', error);
         }
       };
-      checkUserData();
+      checkUserData();  
     }
   }, [route.params]);
 
@@ -71,6 +72,7 @@ export default function App() {
       return () => clearInterval(interval); // Clear interval when the component unmounts
     }
   }, [userData]);
+
   const sendStepData = async (userId, steps, date) => {
     try {
       const response = await axios.post('http://10.2.19.199:5600/steps', {
@@ -97,6 +99,46 @@ export default function App() {
       console.error('Error removing user data from AsyncStorage:', error);
     }
   };
+
+  // Native HealthKit Integration for iOS
+  useEffect(() => {
+    if (Platform.OS === 'ios' && !Constants.isDevice) {
+      const permissions = {
+        permissions: {
+          read: ['StepCount'],
+        },
+      };
+      AppleHealthKit.initHealthKit(permissions, (error) => {
+        if (error) {
+          console.log('Error initializing HealthKit: ', error);
+          return;
+        }
+
+        const options = {
+          startDate: new Date().toISOString(),
+        };
+
+        AppleHealthKit.getStepCount(options, (err, results) => {
+          if (err) {
+            console.log('Error fetching step count: ', err);
+            return;
+          }
+          setTodaySteps(results.value || 0);
+          setTotalSteps(results.value || 0);
+        });
+      });
+    } else if (Platform.OS === 'android' || Constants.appOwnership === 'expo') {
+      // Use Expo Sensors for development and Android
+      Pedometer.isAvailableAsync().then(
+        result => setIsPedometerAvailable(String(result)),
+        error => setIsPedometerAvailable("Could not get availability: " + error)
+      );
+      Pedometer.watchStepCount(result => {
+        setTodaySteps(result.steps);
+        setTotalSteps(prevSteps => prevSteps + result.steps);
+      });
+    }
+  }, []);
 
   return (
     <View style={styles.container}>

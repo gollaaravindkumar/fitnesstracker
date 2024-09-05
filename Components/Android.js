@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Button, Alert, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, Button, Alert, StyleSheet, ActivityIndicator, FlatList,PermissionsAndroid } from 'react-native';
 import { Pedometer } from 'expo-sensors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useGlobalState } from '../Frontend/GlobalState';
-import TimePickerComponent from '../Frontend/TimePickerComponent';
+import { useGlobalState } from '../GlobalState';
+import TimePickerComponent from '../TimePickerComponent';
 
 const HomeScreen = ({ route, navigation }) => {
   const [currentStepCount, setCurrentStepCount] = useState(0);
@@ -49,6 +49,7 @@ const HomeScreen = ({ route, navigation }) => {
     }
   };
 
+
   useEffect(() => {
     // Save user data to AsyncStorage
     const saveUserData = async () => {
@@ -64,7 +65,7 @@ const HomeScreen = ({ route, navigation }) => {
     };
 
     saveUserData();
-  },);
+  }, [name, age]);
   
   useEffect(() => {
     const loadStepsData = async () => {
@@ -102,24 +103,49 @@ const HomeScreen = ({ route, navigation }) => {
 
     loadStepsData();
   }, []);
-
+  const requestActivityPermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACTIVITY_RECOGNITION || PermissionsAndroid.PERMISSIONS.BODY_SENSORS,
+        {
+          title: 'Activity Recognition Permission',
+          message: 'This app needs access to your physical activity to track your steps.',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  };
+  
   useEffect(() => {
     const subscribeToPedometer = async () => {
+      const hasPermission = await requestActivityPermission();
+      if (!hasPermission) {
+        Alert.alert('Permission Denied', 'Cannot access step count without permission.');
+        return;
+      }
+  
       const isAvailable = await Pedometer.isAvailableAsync();
+      console.log("Pedometer Available:", isAvailable);
       if (isAvailable) {
+        console.log("Subscribing to Pedometer");
         const subscription = Pedometer.watchStepCount((result) => {
+          console.log("Inside watchStepCount", result);
           setCurrentStepCount(result.steps);
-
-          // Use functional update to ensure state is correctly updated
-          setDailySteps(prevDailySteps => {
-            const newDailySteps = prevDailySteps + 1;
-            AsyncStorage.setItem('dailySteps', JSON.stringify(newDailySteps)); // Updated: save daily steps to AsyncStorage
+          // Update daily and total steps
+          setDailySteps(prev => {
+            const newDailySteps = prev + result.steps;
+            AsyncStorage.setItem('dailySteps', JSON.stringify(newDailySteps));
             return newDailySteps;
           });
-
-          setTotalSteps(prevTotalSteps => {
-            const newTotalSteps = prevTotalSteps + 1;
-            AsyncStorage.setItem('totalSteps', JSON.stringify(newTotalSteps)); // Updated: save total steps to AsyncStorage
+          setTotalSteps(prev => {
+            const newTotalSteps = prev + result.steps;
+            AsyncStorage.setItem('totalSteps', JSON.stringify(newTotalSteps));
             return newTotalSteps;
           });
         });
@@ -128,15 +154,16 @@ const HomeScreen = ({ route, navigation }) => {
         Alert.alert('Error', 'Pedometer is not available on this device');
       }
     };
-
+  
     subscribeToPedometer();
-
+  
     return () => {
       if (pedometerSubscriptionRef.current && typeof pedometerSubscriptionRef.current.remove === 'function') {
         pedometerSubscriptionRef.current.remove();
       }
     };
   }, []);
+  
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -180,8 +207,8 @@ const HomeScreen = ({ route, navigation }) => {
 
   const renderContent = () => (
     <View style={styles.container}>
-      {/* <Text>Welcome, {name}!</Text>
-      <Text>Age: {age}</Text> */}
+      <Text>Welcome, {name}!</Text>
+      <Text>Age: {age}</Text>
       <Text style={styles.header}>Home Screen</Text>
       <Text style={styles.stat}>Current Step Count: {currentStepCount}</Text>
       <Text style={styles.stat}>Daily Steps: {dailySteps}</Text>
@@ -271,7 +298,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   footer: {
-    height: 20,  // to create some padding at the bottom
+    height: 20, 
   },
 });
 

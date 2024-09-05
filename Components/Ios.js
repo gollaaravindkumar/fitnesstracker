@@ -57,7 +57,37 @@ const StepTracking = () => {
     }
   };
 
+<<<<<<< HEAD
   const fetchWeeklyStepData = async (eventStartTime) => {
+=======
+  const initializeEventDuration = () => {
+    const now = new Date();
+
+    const eventStart = new Date(now);
+    eventStart.setHours(9, 0, 0, 0); // Set start time to 9 AM today
+
+    const eventEnd = new Date(eventStart);
+    eventEnd.setDate(eventEnd.getDate() + 2); // End 2 days later at 5 PM
+    eventEnd.setHours(17, 0, 0, 0); // Set end time to 5 PM two days later
+
+    return { eventStart, eventEnd };
+  };
+
+  const checkEventStatus = (eventStart, eventEnd) => {
+    const now = new Date();
+    if (now < eventStart || now > eventEnd) {
+      setEventActive(false);
+    }
+  };
+
+  const fetchStepData = async (installationDate) => {
+    const currentDate = new Date();
+    const startOfToday = new Date(currentDate);
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+>>>>>>> ab54d6d0d965c87724442087f6057e766c5af90d
     try {
       const isAvailable = await Pedometer.isAvailableAsync();
       setIsPedometerAvailable(isAvailable ? 'available' : 'unavailable');

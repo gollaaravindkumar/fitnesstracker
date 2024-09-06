@@ -1,76 +1,107 @@
- import React, { useState, useEffect } from 'react';
- import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
- import AppleHealthKit from 'react-native-health';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button } from 'react-native';
+import AppleHealthKit, { HealthKitPermissions } from 'react-native-health';
 
- const StepCounter = () => {
-   const [stepCount, setStepCount] = useState(0);
+const permissions = {
+  permissions: {
+    read: [AppleHealthKit.Constants.Permissions.Steps],
+  },
+};
 
-   useEffect(() => {
-     const permissions = {
-       permissions: {
-         read: ['StepCount'],
-       },
-     };
+const WeeklyStepCount = () => {
+  const [weeklySteps, setWeeklySteps] = useState({
+    Monday: 0,
+    Tuesday: 0,
+    Wednesday: 0,
+    Thursday: 0,
+    Friday: 0,
+    Saturday: 0,
+    Sunday: 0,
+  });
+  const [totalSteps, setTotalSteps] = useState(0);
 
-     AppleHealthKit.initHealthKit(permissions, (error) => {
-       if (error) {
-         console.log('Error initializing HealthKit: ', error);
-         return;
-       }
+  useEffect(() => {
+    AppleHealthKit.initHealthKit(permissions, (err) => {
+      if (err) {
+        console.log('Error initializing HealthKit:', err);
+        return;
+      }
+      fetchCurrentWeekSteps();
+    });
+  }, []);
 
-       const options = {
-         startDate: new Date(2023, 7, 25).toISOString(),  
-         
-       };
+  // Function to get the current week's Monday and Sunday dates
+  const getCurrentWeekRange = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 (Sunday) - 6 (Saturday)
 
-       AppleHealthKit.getStepCount(options, (err, results) => {
-         if (err) {
-           console.log('Error fetching step count: ', err);
-           return;
-         }
-         setStepCount(results.value);
-       });
-     });
-   }, []);
-   return (
-     <SafeAreaView style={styles.container}>
-       <View style={styles.card}>
-         <Text style={styles.title}>Today's Step Count</Text>
-         <Text style={styles.count}>{stepCount}</Text>
-       </View>
-     </SafeAreaView>
-   );
- };
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)); // Adjust to Monday
 
- const styles = StyleSheet.create({
-   container: {
-     flex: 1,
-     justifyContent: 'center',
-     alignItems: 'center',
-     backgroundColor: '#F5FCFF',
-   },
-   card: {
-     backgroundColor: '#FFF',
-     padding: 20,
-     borderRadius: 10,
-     shadowColor: '#000',
-     shadowOffset: { width: 0, height: 2 },
-     shadowOpacity: 0.3,
-     shadowRadius: 5,
-     elevation: 5,
-     alignItems: 'center',
-   },
-   title: {
-     fontSize: 24,
-     color: '#333',
-     marginBottom: 10,
-     fontWeight: 'bold',
-   },
-   count: {
-     fontSize: 48,
-     color: '#4CAF50',
-     fontWeight: 'bold',
-   },
- });
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6); // Sunday is 6 days after Monday
 
- export default StepCounter;
+    return { monday, sunday };
+  };
+
+  const fetchCurrentWeekSteps = () => {
+    const { monday, sunday } = getCurrentWeekRange();
+
+    const options = {
+      startDate: monday.toISOString(), // Start date (this Monday)
+      endDate: sunday.toISOString(),   // End date (this Sunday)
+    };
+
+    AppleHealthKit.getDailyStepCountSamples(options, (err, results) => {
+      if (err) {
+        console.log('Error fetching step count:', err);
+        return;
+      }
+      processWeeklySteps(results);
+    });
+  };
+
+  const processWeeklySteps = (results) => {
+    const stepsByDay = {
+      Monday: 0,
+      Tuesday: 0,
+      Wednesday: 0,
+      Thursday: 0,
+      Friday: 0,
+      Saturday: 0,
+      Sunday: 0,
+    };
+
+    let total = 0;
+
+    results.forEach((sample) => {
+      const date = new Date(sample.startDate);
+      const dayIndex = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+      const dayMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayName = dayMap[dayIndex];
+
+      // Sum steps per day
+      stepsByDay[dayName] += sample.value;
+      total += sample.value; // Accumulate total steps
+    });
+
+    setWeeklySteps(stepsByDay); // Update steps per day in state
+    setTotalSteps(total);       // Store the total step count
+  };
+
+  return (
+    <View>
+      <Text>Weekly Step Counts:</Text>
+      {Object.entries(weeklySteps).map(([day, steps], index) => (
+        <Text key={index}>
+          {day}: {steps} steps
+        </Text>
+      ))}
+      <Text>Total Steps for the Week: {totalSteps} steps</Text>
+      <Button title="Fetch Weekly Step Count" onPress={fetchCurrentWeekSteps} />
+    </View>
+  );
+};
+
+export default WeeklyStepCount;

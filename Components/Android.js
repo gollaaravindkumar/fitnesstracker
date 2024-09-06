@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Button, Alert, StyleSheet, ActivityIndicator, FlatList,PermissionsAndroid } from 'react-native';
 import { Pedometer } from 'expo-sensors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useGlobalState } from '../GlobalState';
-import TimePickerComponent from '../TimePickerComponent';
+import { useGlobalState } from '../Frontend/GlobalState';
+import TimePickerComponent from '../Frontend/TimePickerComponent';
 
 const HomeScreen = ({ route, navigation }) => {
   const [currentStepCount, setCurrentStepCount] = useState(0);

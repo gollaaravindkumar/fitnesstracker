@@ -130,20 +130,22 @@
 //   },
 // });
 
-
-
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
-import RootStack from '../Navigation/RootStack'
+import { StyleSheet, Text, View } from "react-native";
+import React from "react";
+import RootStack from "../Navigation/RootStack";
+import { StepsProvider } from "../Components/StepsContext";
+import { NavigationContainer } from "@react-navigation/native";
 
 const _layout = () => {
   return (
-    <>
-    <RootStack/>
-    </>
-  )
-}
+    <StepsProvider>
+      <NavigationContainer independent={true}>
+        <RootStack />
+      </NavigationContainer>
+    </StepsProvider>
+  );
+};
 
-export default _layout
+export default _layout;
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({});

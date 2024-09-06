@@ -1,77 +1,51 @@
 import { Platform, StyleSheet, Text, View, SafeAreaView, FlatList, Button } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import Constants from 'expo-constants';
 import AppleHealthKit from 'react-native-health';
-import { getWeekDays } from '../utils/utils'; // Utility file for common functions
+import Constants from 'expo-constants';
+import { getWeekDays } from '../utils/utils'; // Assume this utility gives the correct start and end dates for each day of the current week
 
 const AppleHealthKitComponent = () => {
   const [weeklySteps, setWeeklySteps] = useState([]);
   const [totalSteps, setTotalSteps] = useState(0);
-  const [error, setError] = useState(null);
+  const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
+  const [realtimeSteps, setRealtimeSteps] = useState(0);
 
-  const processWeeklySteps = (results) => {
-    const stepsByDay = {
-      Monday: 0,
-      Tuesday: 0,
-      Wednesday: 0,
-      Thursday: 0,
-      Friday: 0,
-      Saturday: 0,
-      Sunday: 0,
-    };
+  const fetchWeeklySteps = async () => {
+    const days = getWeekDays(); // A utility function that gives dates for Monday to Sunday
+    let stepsData = [];
+    let totalStepCount = 0;
 
-    let total = 0;
+    for (let day of days) {
+      const start = new Date(day.setHours(0, 0, 0, 0)); // Start of the day
+      const end = new Date(day.setHours(23, 59, 59, 999)); // End of the day
 
-    results.forEach((sample) => {
-      const date = new Date(sample.startDate);
-      const dayIndex = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const options = {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      };
 
-      const dayMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const dayName = dayMap[dayIndex];
+      try {
+        const result = await new Promise((resolve, reject) => {
+          AppleHealthKit.getDailyStepCountSamples(options, (err, results) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(results);
+            }
+          });
+        });
 
-      stepsByDay[dayName] += sample.value;
-      total += sample.value;
-    });
-
-    const formattedSteps = Object.keys(stepsByDay).map(day => ({
-      date: day,
-      steps: stepsByDay[day],
-    }));
-
-    setWeeklySteps(formattedSteps);
-    setTotalSteps(total);
-  };
-
-  const fetchCurrentWeekSteps = () => {
-    const { monday, sunday } = getCurrentWeekRange();
-
-    const options = {
-      startDate: monday.toISOString(),
-      endDate: sunday.toISOString(),
-    };
-
-    AppleHealthKit.getDailyStepCountSamples(options, (err, results) => {
-      if (err) {
-        console.error('Error fetching step count:', err);
-        setError('Failed to fetch step count data.');
-        return;
+        // Aggregate steps for the day
+        const dailySteps = result.reduce((acc, item) => acc + item.value, 0);
+        stepsData.push({ date: day.toDateString(), steps: dailySteps });
+        totalStepCount += dailySteps;
+      } catch (error) {
+        console.error(`Error fetching step count for ${day.toDateString()}:`, error);
       }
-      console.log('Step count data:', results); // Log the results for debugging
-      processWeeklySteps(results);
-    });
-  };
+    }
 
-  const getCurrentWeekRange = () => {
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-
-    return { monday, sunday };
+    setWeeklySteps(stepsData);
+    setTotalSteps(totalStepCount);
   };
 
   useEffect(() => {
@@ -84,12 +58,11 @@ const AppleHealthKitComponent = () => {
 
       AppleHealthKit.initHealthKit(permissions, (error) => {
         if (error) {
-          console.error('Error initializing HealthKit: ', error);
-          setError('Failed to initialize HealthKit.');
+          console.error('Error initializing HealthKit:', error);
           return;
         }
 
-        fetchCurrentWeekSteps();
+        fetchWeeklySteps(); // Fetch weekly steps once initialized
       });
     }
   }, []);
@@ -103,22 +76,20 @@ const AppleHealthKitComponent = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : (
-        <>
-          <FlatList
-            data={weeklySteps}
-            renderItem={renderStepItem}
-            keyExtractor={(item) => item.date}
-            contentContainerStyle={styles.list}
-          />
-          <View style={styles.footer}>
-            <Text>Total Steps for the Week: {totalSteps} steps</Text>
-            <Button title="Fetch Weekly Step Count" onPress={fetchCurrentWeekSteps} />
-          </View>
-        </>
-      )}
+      <FlatList
+        data={weeklySteps}
+        renderItem={renderStepItem}
+        keyExtractor={(item) => item.date}
+        contentContainerStyle={styles.list}
+      />
+      <View style={styles.realtimeContainer}>
+        <Text style={styles.realtimeTitle}>Real-Time Step Count</Text>
+        <Text style={styles.realtimeCount}>{realtimeSteps} steps</Text>
+      </View>
+      <View style={styles.footer}>
+        <Text>Total Steps for the Week: {totalSteps} steps</Text>
+        <Button title="Fetch Weekly Step Count" onPress={fetchWeeklySteps} />
+      </View>
     </SafeAreaView>
   );
 };
@@ -156,14 +127,23 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: 'bold',
   },
-  footer: {
+  realtimeContainer: {
     marginTop: 20,
     alignItems: 'center',
   },
-  error: {
-    color: 'red',
-    fontSize: 16,
-    marginBottom: 20,
+  realtimeTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  realtimeCount: {
+    fontSize: 24,
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  footer: {
+    marginTop: 20,
+    alignItems: 'center',
   },
 });
 

@@ -70,9 +70,10 @@ const SignUpScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="First Name"
-            placeholderTextColor="#ffffff"
+            placeholderTextColor="#000"
             value={firstName}
             onChangeText={setFirstName}
+        
           />
         </View>
         
@@ -81,7 +82,7 @@ const SignUpScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Last Name"
-            placeholderTextColor="#ffffff"
+  placeholderTextColor="#000"
             value={lastName}
             onChangeText={setLastName}
           />
@@ -92,7 +93,7 @@ const SignUpScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#ffffff"
+  placeholderTextColor="#000"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -104,7 +105,7 @@ const SignUpScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Password"
-            placeholderTextColor="#ffffff"
+  placeholderTextColor="#000"
             value={password}
             onChangeText={setPassword}
             secureTextEntry

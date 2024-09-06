@@ -34,7 +34,7 @@ const SignUpScreen = () => {
 
     try {
       // Send user data along with device information to your API
-      const response = await axios.post('https://your-api-url.com/signup', {
+      const response = await axios.post('https://ngage.nexalink.co/health/users/signup', {
         type: 'lpadmin',
         first_name: firstName,
         last_name: lastName,

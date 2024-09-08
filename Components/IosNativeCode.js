@@ -1,23 +1,24 @@
 import { Platform, StyleSheet, Text, View, SafeAreaView, FlatList, Button } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import AppleHealthKit from 'react-native-health';
 import Constants from 'expo-constants';
-import { getWeekDays } from '../utils/utils'; // Assume this utility gives the correct start and end dates for each day of the current week
+import { getWeekDays } from '../utils/utils';
+import { StepsContext } from '../Components/StepsContext'; // Import the context
+import { useNavigation } from '@react-navigation/native'; // Import the navigation hook
 
 const AppleHealthKitComponent = () => {
-  const [weeklySteps, setWeeklySteps] = useState([]);
-  const [totalSteps, setTotalSteps] = useState(0);
-  const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
   const [realtimeSteps, setRealtimeSteps] = useState(0);
+  const navigation = useNavigation();
+  const { weeklySteps, setWeeklySteps, totalSteps, setTotalSteps } = useContext(StepsContext);
 
   const fetchWeeklySteps = async () => {
-    const days = getWeekDays(); // A utility function that gives dates for Monday to Sunday
+    const days = getWeekDays();
     let stepsData = [];
     let totalStepCount = 0;
 
     for (let day of days) {
-      const start = new Date(day.setHours(0, 0, 0, 0)); // Start of the day
-      const end = new Date(day.setHours(23, 59, 59, 999)); // End of the day
+      const start = new Date(day.setHours(0, 0, 0, 0));
+      const end = new Date(day.setHours(23, 59, 59, 999));
 
       const options = {
         startDate: start.toISOString(),
@@ -35,7 +36,6 @@ const AppleHealthKitComponent = () => {
           });
         });
 
-        // Aggregate steps for the day
         const dailySteps = result.reduce((acc, item) => acc + item.value, 0);
         stepsData.push({ date: day.toDateString(), steps: dailySteps });
         totalStepCount += dailySteps;
@@ -62,7 +62,7 @@ const AppleHealthKitComponent = () => {
           return;
         }
 
-        fetchWeeklySteps(); // Fetch weekly steps once initialized
+        fetchWeeklySteps();
       });
     }
   }, []);
@@ -89,6 +89,7 @@ const AppleHealthKitComponent = () => {
       <View style={styles.footer}>
         <Text>Total Steps for the Week: {totalSteps} steps</Text>
         <Button title="Fetch Weekly Step Count" onPress={fetchWeeklySteps} />
+        <Button title="Go to LeaderBoard" onPress={() => navigation.navigate('LeaderBoard')} />
       </View>
     </SafeAreaView>
   );

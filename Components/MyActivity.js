@@ -6,9 +6,9 @@ import { StepsContext } from '../Components/StepsContext';
 const screenWidth = Dimensions.get('window').width;
 
 const MyActivity = () => {
-  const { weekSteps } = useContext(StepsContext);
-  const validatedWeekSteps = Array.isArray(weekSteps) && weekSteps.length === 7
-    ? weekSteps
+  const { setWeeklySteps } = useContext(StepsContext);
+  const validatedWeekSteps = Array.isArray(setWeeklySteps) && weeklySteps.length === 7
+    ? setWeeklySteps
     : [0, 0, 0, 0, 0, 0, 0]; // Default value if data is invalid
 
   // Chart data

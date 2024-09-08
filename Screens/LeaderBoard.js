@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -10,7 +10,7 @@ import {
   StyleSheet
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
-import FontAwesome6 from 'react-native-vector-icons/FontAwesome6'; // Import FontAwesome6
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import MainUser from '../Components/MainUser';
 import { StepsContext } from '../Components/StepsContext';
 import MyActivity from '../Components/MyActivity';
@@ -18,9 +18,9 @@ import DateRangePicker from '../Components/DateRangePicker';
 import moment from 'moment';
 
 const LeaderBoard = () => {
-  const { todaySteps, weekSteps } = useContext(StepsContext);
-
-  const isValidWeekSteps = Array.isArray(weekSteps) && weekSteps.length === 7;
+  const { weeklySteps, totalSteps } = useContext(StepsContext);
+  
+  const isValidWeekSteps = Array.isArray(weeklySteps) && weeklySteps.length === 7;
 
   const [selected, setSelected] = useState("Rank");
   const [isStartPickerVisible, setStartPickerVisible] = useState(false);
@@ -28,21 +28,28 @@ const LeaderBoard = () => {
   const [startDate, setStartDate] = useState(moment().startOf('day').toDate());
   const [endDate, setEndDate] = useState(moment().endOf('day').toDate());
 
-  const LeaderBoardData = [
-    { id: 1, name: "Harsha", steps: todaySteps, image: "https://randomuser.me/api/portraits/men/1.jpg" },
-    { id: 2, name: "John Doe", steps: 600, image: "https://randomuser.me/api/portraits/men/5.jpg" },
-    { id: 3, name: "Jane Smith", steps: 500, image: "https://randomuser.me/api/portraits/women/6.jpg" },
-    { id: 4, name: "Chris Evans", steps: 400, image: "https://randomuser.me/api/portraits/men/7.jpg" },
-    { id: 5, name: "Michael Brown", steps: 300, image: "https://randomuser.me/api/portraits/women/8.jpg" },
-    { id: 6, name: "Linda Taylor", steps: 200, image: "https://randomuser.me/api/portraits/men/9.jpg" },
-    { id: 7, name: "David Wilson", steps: 100, image: "https://randomuser.me/api/portraits/women/10.jpg" },
-  ];
+  // Mock data for leaderboard - replace with actual data fetching
+  const [leaderBoardData, setLeaderBoardData] = useState([]);
 
-  const sortedData = LeaderBoardData.sort((a, b) => b.steps - a.steps);
+  useEffect(() => {
+    // Fetch data or use a static example
+    // Example static data
+    setLeaderBoardData([
+      { id: 1, name: "Harsha", steps: totalSteps, image: "https://randomuser.me/api/portraits/men/1.jpg" },
+      { id: 2, name: "John Doe", steps: 600, image: "https://randomuser.me/api/portraits/men/5.jpg" },
+      { id: 3, name: "Jane Smith", steps: 500, image: "https://randomuser.me/api/portraits/women/6.jpg" },
+      { id: 4, name: "Chris Evans", steps: 400, image: "https://randomuser.me/api/portraits/men/7.jpg" },
+      { id: 5, name: "Michael Brown", steps: 300, image: "https://randomuser.me/api/portraits/women/8.jpg" },
+      { id: 6, name: "Linda Taylor", steps: 200, image: "https://randomuser.me/api/portraits/men/9.jpg" },
+      { id: 7, name: "David Wilson", steps: 100, image: "https://randomuser.me/api/portraits/women/10.jpg" },
+    ]);
+  }, [totalSteps]); // Depend on `todaySteps` if it's dynamic
+
+  const sortedData = leaderBoardData.sort((a, b) => b.steps - a.steps);
 
   const chartData = isValidWeekSteps ? {
     labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    datasets: [{ data: weekSteps }],
+    datasets: [{ data: weeklySteps }],
   } : {
     labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     datasets: [{ data: [0, 0, 0, 0, 0, 0, 0] }],

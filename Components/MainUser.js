@@ -3,12 +3,12 @@ import React,{useContext} from 'react';
 import { StepsContext } from '../Components/StepsContext'; 
 const MainUser = () => {
 
-  const { todaySteps, weekSteps } = useContext(StepsContext);
+  const { weeklySteps, totalSteps } = useContext(StepsContext);
   const LeaderBoardData = [
     {
       id: 1,
       name: "Harsha",
-      steps: todaySteps, // High value to ensure Harsha is always at the top
+      steps: totalSteps, // High value to ensure Harsha is always at the top
       image: "https://randomuser.me/api/portraits/men/1.jpg",
     }
   ];

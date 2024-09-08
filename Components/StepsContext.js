@@ -1,14 +1,13 @@
-
 import React, { createContext, useState } from 'react';
 
 export const StepsContext = createContext();
 
 export const StepsProvider = ({ children }) => {
-  const [todaySteps, setTodaySteps] = useState(0);
-  const [weekSteps, setWeekSteps] = useState([0, 0, 0, 0, 0, 0, 0]); // Initialize with 7 days
+  const [weeklySteps, setWeeklySteps] = useState([]);
+  const [totalSteps, setTotalSteps] = useState(0);
 
   return (
-    <StepsContext.Provider value={{ todaySteps, setTodaySteps, weekSteps, setWeekSteps }}>
+    <StepsContext.Provider value={{ weeklySteps, totalSteps, setWeeklySteps, setTotalSteps }}>
       {children}
     </StepsContext.Provider>
   );

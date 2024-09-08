@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import * as Device from 'expo-device';
 import axios from 'axios';
 
-const SignUpScreen = () => {
+const SignUpScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -13,7 +13,6 @@ const SignUpScreen = () => {
   const [deviceInfo, setDeviceInfo] = useState({});
 
   useEffect(() => {
-    // Get device information on component mount
     const getDeviceInfo = () => {
       setDeviceInfo({
         deviceName: Device.modelName,
@@ -33,8 +32,7 @@ const SignUpScreen = () => {
     }
 
     try {
-      // Send user data along with device information to your API
-      const response = await axios.post('https://ngage.nexalink.co/health/users/signup', {
+      const response = await axios.post('https://example.com/api/signup', {
         first_name: firstName,
         last_name: lastName,
         email: email,
@@ -48,7 +46,8 @@ const SignUpScreen = () => {
 
       if (response.status === 200) {
         Alert.alert('Success', 'Signed up successfully!');
-        // You can navigate to another screen here, e.g., navigation.navigate('Home');
+        // Navigate to the LoginScreen after sign-up
+        navigation.replace('Login');
       } else {
         Alert.alert('Error', 'Sign up failed. Please try again.');
       }
@@ -57,6 +56,7 @@ const SignUpScreen = () => {
       Alert.alert('Error', 'An error occurred during sign up. Please try again.');
     }
   };
+
   return (
     <LinearGradient
       colors={['#405D72', '#758694']}
@@ -64,7 +64,7 @@ const SignUpScreen = () => {
     >
       <View style={styles.formContainer}>
         <Text style={styles.header}>Sign Up</Text>
-        
+
         <View style={styles.inputContainer}>
           <Icon name="user" size={20} color="#ffffff" style={styles.icon} />
           <TextInput
@@ -73,16 +73,15 @@ const SignUpScreen = () => {
             placeholderTextColor="#000"
             value={firstName}
             onChangeText={setFirstName}
-        
           />
         </View>
-        
+
         <View style={styles.inputContainer}>
           <Icon name="user" size={20} color="#ffffff" style={styles.icon} />
           <TextInput
             style={styles.input}
             placeholder="Last Name"
-  placeholderTextColor="#000"
+            placeholderTextColor="#000"
             value={lastName}
             onChangeText={setLastName}
           />
@@ -93,7 +92,7 @@ const SignUpScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Email"
-  placeholderTextColor="#000"
+            placeholderTextColor="#000"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -105,7 +104,7 @@ const SignUpScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Password"
-  placeholderTextColor="#000"
+            placeholderTextColor="#000"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -131,8 +130,8 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     backgroundColor: '#ffffff',
-    elevation: 5, // shadow for Android
-    shadowColor: '#000000', // shadow for iOS
+    elevation: 5,
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,

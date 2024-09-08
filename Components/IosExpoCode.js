@@ -1,14 +1,30 @@
 import { Platform, StyleSheet, Text, View, SafeAreaView, FlatList, Button } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Pedometer } from 'expo-sensors';
-import { getWeekDays } from '../utils/utils'; 
-import Constants from 'expo-constants';// Utility file for common functions
+import Constants from 'expo-constants';
+import { StepsContext } from '../Components/StepsContext';  // Adjust the path as needed
 
-const ExpoPedometer = () => {
-  const [weeklySteps, setWeeklySteps] = useState([]);
-  const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
+const getWeekDays = () => {
+  const today = new Date();
+  const weekDays = [];
+  
+  // Find the start of the week (Monday)
+  const firstDayOfWeek = today.getDate() - today.getDay() + 1; 
+  const firstDate = new Date(today.setDate(firstDayOfWeek));
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(firstDate);
+    date.setDate(firstDate.getDate() + i);
+    weekDays.push(date);
+  }
+  
+  return weekDays;
+};
+
+const ExpoPedometer = ({ navigation }) => {
+  const { weeklySteps, setWeeklySteps, totalSteps, setTotalSteps } = useContext(StepsContext);
   const [realtimeSteps, setRealtimeSteps] = useState(0);
-  const [totalSteps, setTotalSteps] = useState(0);
+  const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
 
   useEffect(() => {
     const subscribePedometer = async () => {
@@ -38,6 +54,7 @@ const ExpoPedometer = () => {
         }
 
         setWeeklySteps(stepsData);
+        setTotalSteps(stepsData.reduce((sum, item) => sum + item.steps, 0));
 
         return () => {
           isSubscriptionActive = false;
@@ -50,6 +67,10 @@ const ExpoPedometer = () => {
     }
   }, []);
 
+  const handlePress = () => {
+    navigation.navigate('LeaderBoard');
+  };
+  
   const renderStepItem = ({ item }) => (
     <View style={styles.card}>
       <Text style={styles.title}>{item.date}</Text>
@@ -71,7 +92,7 @@ const ExpoPedometer = () => {
       </View>
       <View style={styles.footer}>
         <Text>Total Steps for the Week: {totalSteps} steps</Text>
-        <Button title="Fetch Weekly Step Count" onPress={() => { /* Function to fetch weekly steps */ }} />
+        <Button title="Go to LeaderBoard" onPress={handlePress} />
       </View>
     </SafeAreaView>
   );

@@ -1,30 +1,16 @@
-import { Platform, StyleSheet, Text, View, SafeAreaView, FlatList, Button } from 'react-native';
+import { Platform, StyleSheet, Text, View, SafeAreaView, FlatList, Button, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect, useContext } from 'react';
 import { Pedometer } from 'expo-sensors';
 import Constants from 'expo-constants';
 import { StepsContext } from '../Components/StepsContext';  // Adjust the path as needed
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
-const getWeekDays = () => {
-  const today = new Date();
-  const weekDays = [];
-  
-  // Find the start of the week (Monday)
-  const firstDayOfWeek = today.getDate() - today.getDay() + 1; 
-  const firstDate = new Date(today.setDate(firstDayOfWeek));
-
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(firstDate);
-    date.setDate(firstDate.getDate() + i);
-    weekDays.push(date);
-  }
-  
-  return weekDays;
-};
-
-const ExpoPedometer = ({ navigation }) => {
+const ExpoPedometer = () => {
   const { weeklySteps, setWeeklySteps, totalSteps, setTotalSteps } = useContext(StepsContext);
   const [realtimeSteps, setRealtimeSteps] = useState(0);
   const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
+  const navigation = useNavigation(); // Correctly use useNavigation hook
 
   useEffect(() => {
     const subscribePedometer = async () => {
@@ -65,12 +51,21 @@ const ExpoPedometer = ({ navigation }) => {
     if (Platform.OS === "ios" && Constants.appOwnership === "expo") {
       subscribePedometer();
     }
-  }, []);
+  }, [setWeeklySteps, setTotalSteps]); // Add dependencies here
 
   const handlePress = () => {
     navigation.navigate('LeaderBoard');
   };
-  
+
+  const signOut = async () => {
+    try {
+      await AsyncStorage.removeItem("ClearData");
+      navigation.replace("Login");
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+    }
+  };
+
   const renderStepItem = ({ item }) => (
     <View style={styles.card}>
       <Text style={styles.title}>{item.date}</Text>
@@ -80,6 +75,9 @@ const ExpoPedometer = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <TouchableOpacity onPress={signOut}>
+        <Text style={{ color: "red" }}>Sign Out</Text>
+      </TouchableOpacity>
       <FlatList
         data={weeklySteps}
         renderItem={renderStepItem}
@@ -96,6 +94,23 @@ const ExpoPedometer = ({ navigation }) => {
       </View>
     </SafeAreaView>
   );
+};
+
+const getWeekDays = () => {
+  const today = new Date();
+  const weekDays = [];
+
+  // Find the start of the week (Monday)
+  const firstDayOfWeek = today.getDate() - today.getDay() + 1; 
+  const firstDate = new Date(today.setDate(firstDayOfWeek));
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(firstDate);
+    date.setDate(firstDate.getDate() + i);
+    weekDays.push(date);
+  }
+
+  return weekDays;
 };
 
 const styles = StyleSheet.create({

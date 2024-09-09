@@ -1,162 +1,209 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import * as Device from 'expo-device';
-import axios from 'axios';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
-const SignUpScreen = ({ navigation }) => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [deviceInfo, setDeviceInfo] = useState({});
+const App = () => {
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const navigation = useNavigation();
 
-  useEffect(() => {
-    const getDeviceInfo = () => {
-      setDeviceInfo({
-        deviceName: Device.modelName,
-        deviceId: Device.deviceId,
-        osName: Device.osName,
-        osVersion: Device.osVersion,
-      });
-    };
-
-    getDeviceInfo();
-  }, []);
-
-  const handleSignUp = async () => {
-    if (!firstName || !lastName || !email || !password) {
-      Alert.alert('Error', 'All fields are required!');
-      return;
-    }
-
+  const handleSignup = async () => {
     try {
-      const response = await axios.post('https://example.com/api/signup', {
-        first_name: firstName,
-        last_name: lastName,
+      const requestBody = {
+        first_name: firstname,
+        last_name: lastname,
         email: email,
         password: password,
-        device_info: deviceInfo,
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      };
 
-      if (response.status === 200) {
-        Alert.alert('Success', 'Signed up successfully!');
-        // Navigate to the LoginScreen after sign-up
-        navigation.replace('Login');
-      } else {
-        Alert.alert('Error', 'Sign up failed. Please try again.');
+      console.log("Request body:", requestBody);
+
+      const response = await fetch(
+        "https://ngage.nexalink.co/health/users/signup", 
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json(); 
+        console.log("Server Error:", errorData);
+        throw new Error(`Server error: ${response.status} - ${errorData.message || 'Invalid request'}`);
       }
+
+      const data = await response.json();
+      console.log("Response data:", data);
+
+  
+      handleOtpGet();
+
     } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'An error occurred during sign up. Please try again.');
+      console.error("Error during signup:", error);
+      Alert.alert("Error", "An error occurred during signup. Please try again.");
+    }
+  };
+
+  const handleOtpGet = async () => {
+    try {
+      const response = await fetch(
+        `https://ngage.nexalink.co/health/loginotp?email=${email}`, 
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+  
+      if (!response.ok) {
+        const errorData = await response.json(); 
+        console.log("Error sending OTP:", errorData);
+        throw new Error(`Error sending OTP: ${response.status}`);
+      }
+  
+      const data = await response.json();
+      console.log("OTP sent:", data);
+  
+
+      Alert.alert("Success", "OTP has been sent to your email.");
+      setIsOtpSent(true); 
+    } catch (error) {
+      console.error("Error during OTP GET request:", error);
+      Alert.alert("Error", "An error occurred while sending OTP. Please try again.");
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      const response = await fetch(
+        "https://ngage.nexalink.co/health/loginotp", 
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: email, otp: otp }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json(); 
+        console.log("Error during OTP verification:", errorData);
+        throw new Error(errorData.message || "OTP verification failed");
+      }
+
+      const data = await response.json();
+      console.log("OTP verification successful:", data);
+
+
+      Alert.alert("Success", "OTP verified successfully!");
+      navigation.replace("Login"); 
+
+    } catch (error) {
+      console.error("Error during OTP verification:", error);
+      Alert.alert("Error", "Invalid OTP. Please try again.");
     }
   };
 
   return (
-    <LinearGradient
-      colors={['#405D72', '#758694']}
-      style={styles.container}
-    >
-      <View style={styles.formContainer}>
-        <Text style={styles.header}>Sign Up</Text>
-
-        <View style={styles.inputContainer}>
-          <Icon name="user" size={20} color="#ffffff" style={styles.icon} />
+    <KeyboardAvoidingView style={styles.container}>
+      <Text style={styles.header}>Sign Up</Text>
+      {!isOtpSent ? (
+        <View style={styles.form}>
           <TextInput
             style={styles.input}
             placeholder="First Name"
-            placeholderTextColor="#000"
-            value={firstName}
-            onChangeText={setFirstName}
+            value={firstname}
+            onChangeText={(text) => setFirstname(text)}
           />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Icon name="user" size={20} color="#ffffff" style={styles.icon} />
           <TextInput
             style={styles.input}
             placeholder="Last Name"
-            placeholderTextColor="#000"
-            value={lastName}
-            onChangeText={setLastName}
+            value={lastname}
+            onChangeText={(text) => setLastname(text)}
           />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Icon name="envelope" size={20} color="#ffffff" style={styles.icon} />
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#000"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => setEmail(text)}
             keyboardType="email-address"
+            autoCapitalize="none"
           />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Icon name="lock" size={20} color="#ffffff" style={styles.icon} />
           <TextInput
             style={styles.input}
             placeholder="Password"
-            placeholderTextColor="#000"
+            secureTextEntry={true}
             value={password}
-            onChangeText={setPassword}
-            secureTextEntry
+            onChangeText={(text) => setPassword(text)}
           />
+          <TouchableOpacity style={styles.button} onPress={handleSignup}>
+            <Text style={styles.buttonText}>Sign Up & Get OTP</Text>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-          <Text style={styles.buttonText}>Sign Up</Text>
-        </TouchableOpacity>
-      </View>
-    </LinearGradient>
+      ) : (
+        <View style={styles.form}>
+          <Text style={styles.header}>Enter OTP</Text>
+          <View style={styles.otpContainer}>
+            <TextInput
+              style={styles.otpInput}
+              value={otp}
+              onChangeText={(text) => setOtp(text)}
+              placeholder="Enter OTP"
+              keyboardType="numeric"
+              placeholderTextColor={"#000"}
+            />
+          </View>
+          <TouchableOpacity style={styles.button} onPress={handleVerifyOtp}>
+            <Text style={styles.buttonText}>Verify OTP</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  formContainer: {
-    width: '80%',
     padding: 20,
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
-    elevation: 5,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    backgroundColor: '#F5F5F5',
   },
   header: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#405D72',
     marginBottom: 20,
+    color: '#405D72',
     textAlign: 'center',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#405D72',
-    marginBottom: 15,
-  },
-  icon: {
-    marginRight: 10,
+  form: {
+    padding: 20,
   },
   input: {
-    flex: 1,
+    borderWidth: 1,
+    borderColor: '#405D72',
+    borderRadius: 5,
+    padding: 15,
+    marginBottom: 15,
     fontSize: 16,
-    color: '#405D72',
+    backgroundColor: '#fff',
   },
   button: {
     backgroundColor: '#405D72',
@@ -165,10 +212,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: '#ffffff',
-    fontSize: 18,
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  otpInput: {
+    width: "90%",
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#405D72',
+    borderRadius: 5,
+    textAlign: 'center',
+    fontSize: 20,
+
   },
 });
 
-export default SignUpScreen;
+export default App;

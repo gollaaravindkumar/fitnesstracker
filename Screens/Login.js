@@ -31,12 +31,24 @@ export default function AuthScreen({ navigation }) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
     try {
-      await axios.post(`https://ngage.nexalink.co/health/users/signup`, { email, password, firstName, lastName });
-      // On successful signup, request OTP
-     
+      const response = await axios.post('https://ngage.nexalink.co/health/users/signup', {
+        firstName,
+        lastName,
+        email,
+        password,
+      });
+      console.log('Signup response:', response);
+      if (response.status === 200) {
+        // On successful signup, request OTP
+        await handleSendOtp();
+        setActiveTab('otp');
+      } else {
+        console.error('Signup failed:', response.data);
+        Alert.alert('Error', 'Signup failed. Please try again.');
+      }
     } catch (error) {
+      console.error('Signup error:', error);
       Alert.alert('Error', 'Signup failed. Please try again.');
     }
   };
@@ -102,6 +114,7 @@ export default function AuthScreen({ navigation }) {
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
+            placeholderTextColor={"#000"}
           />
           <TextInput
             style={styles.input}
@@ -109,8 +122,9 @@ export default function AuthScreen({ navigation }) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            placeholderTextColor={"#000"}
           />
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <TouchableOpacity style={styles.button} onPress={handleLogin} >
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.link} onPress={() => setActiveTab('forgot')}>
@@ -129,12 +143,14 @@ export default function AuthScreen({ navigation }) {
             placeholder="First Name"
             value={firstName}
             onChangeText={setFirstName}
+            placeholderTextColor={"#000"}
           />
           <TextInput
             style={styles.input}
             placeholder="Last Name"
             value={lastName}
             onChangeText={setLastName}
+            placeholderTextColor={"#000"}
           />
           <TextInput
             style={styles.input}
@@ -142,12 +158,14 @@ export default function AuthScreen({ navigation }) {
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
+            placeholderTextColor={"#000"}
           />
           <TextInput
             style={styles.input}
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
+            placeholderTextColor={"#000"}
             secureTextEntry
           />
           <TouchableOpacity style={styles.button} onPress={handleSignup}>
@@ -194,6 +212,7 @@ export default function AuthScreen({ navigation }) {
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
+            placeholderTextColor={"#000"}
           />
           <TouchableOpacity style={styles.button} onPress={handleForgotPassword}>
             <Text style={styles.buttonText}>Send Reset Link</Text>
@@ -232,6 +251,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 16,
     backgroundColor: '#fff',
+
   },
   button: {
     backgroundColor: '#405D72',

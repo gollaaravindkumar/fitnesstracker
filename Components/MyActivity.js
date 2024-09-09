@@ -1,64 +1,108 @@
 import React, { useContext } from 'react';
-import { StyleSheet, View, Text, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import { StepsContext } from '../Components/StepsContext'; // Use named import
 import { BarChart } from 'react-native-chart-kit';
-import { StepsContext } from '../Components/StepsContext';
-
-const screenWidth = Dimensions.get('window').width;
 
 const MyActivity = () => {
-  const { setWeeklySteps } = useContext(StepsContext);
-  const validatedWeekSteps = Array.isArray(setWeeklySteps) && weeklySteps.length === 7
-    ? setWeeklySteps
-    : [0, 0, 0, 0, 0, 0, 0]; // Default value if data is invalid
+  const { weeklySteps } = useContext(StepsContext);
 
-  // Chart data
-  const data = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [
-      {
-        data: validatedWeekSteps, // Use validated weekly steps data
-      },
-    ],
-  };
+  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; 
+  const stepsData = weeklySteps.map(step => step.steps);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My Activity</Text>
-      <BarChart
-        data={data}
-        width={screenWidth - 32} // Subtract padding
-        height={220}
-        yAxisLabel=""
-        chartConfig={{
-          backgroundColor: '#fff',
-          backgroundGradientFrom: '#fb8c00',
-          backgroundGradientTo: '#ffc107',
-          decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-          labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-          barPercentage: 0.5,
-          useShadowColorFromDataset: false,
-        }}
-        style={styles.chart}
-      />
+      <View style={styles.chartContainer}>
+        <BarChart
+        scrollEnabled={true}
+          data={{
+            labels: labels,
+            datasets: [
+              {
+                data: stepsData,
+              },
+            ],
+          }}
+          width={Dimensions.get('window').width}// Increase width to fit all bars
+          height={220}
+          yAxisLabel=""
+          yAxisSuffix=""
+          chartConfig={{
+            backgroundColor: '#f8f9fa',
+            backgroundGradientFrom: '#ffffff',
+            backgroundGradientTo: '#f8f9fa',
+            decimalPlaces: 0,
+            color: (opacity = 1) => `rgba(255, 99, 132, ${opacity})`,
+            labelColor: (opacity = 1) => `rgba(33, 37, 41, ${opacity})`,
+            style: {
+              borderRadius: 16,
+              borderWidth: 0,
+        
+            },
+            propsForLabels: {
+              fontSize: '12',
+              fontWeight: 'bold',
+              color: '#333',
+
+            },
+            propsForBackgroundLines: {
+              strokeDasharray: '', // solid lines
+            },
+            propsForDots: {
+              r: '6',
+              strokeWidth: '2',
+              stroke: '#ffa726',
+            },
+          }}
+          verticalLabelRotation={30} // Rotate labels for better fit
+        />
+      </View>
+      {/* <View style={styles.dataContainer}>
+        {weeklySteps.map((steps, index) => (
+          <View key={index} style={styles.stepItem}>
+            <Text style={styles.stepText}>
+              {labels[index]}: {steps.steps} steps
+            </Text>
+          </View>
+        ))}
+      </View> */}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
+    width: '100%',
+ // Adjust horizontal margin to center content
+   
+    marginRight:40, // Add padding to ensure content is not too close to the edges
+    borderRadius: 10, // Optional: add border radius for a softer look
   },
   title: {
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 16,
+    color: '#343a40', // Darker text color
+    marginBottom: 20,
+    textAlign: 'center',
   },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 16,
+  chartContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  dataContainer: {
+    width: '100%',
+  },
+  stepItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#dee2e6', // Light border color
+    paddingHorizontal: 0,
+  },
+  stepText: {
+    fontSize: 16,
+    color: '#495057', // Text color for steps
   },
 });
 

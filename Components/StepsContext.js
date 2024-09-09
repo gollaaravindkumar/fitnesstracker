@@ -3,7 +3,7 @@ import React, { createContext, useState } from 'react';
 export const StepsContext = createContext();
 
 export const StepsProvider = ({ children }) => {
-  const [weeklySteps, setWeeklySteps] = useState([]);
+  const [weeklySteps, setWeeklySteps] = useState([""]);
   const [totalSteps, setTotalSteps] = useState(0);
 
   return (
@@ -12,3 +12,4 @@ export const StepsProvider = ({ children }) => {
     </StepsContext.Provider>
   );
 };
+

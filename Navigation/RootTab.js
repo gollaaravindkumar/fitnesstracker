@@ -4,9 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../Frontend/Home'; // Example Tab screen
 import LeaderBoardScreen from '../Screens/LeaderBoard'; // Example Tab screen
 import Icon from 'react-native-vector-icons/FontAwesome'; // Import the icons you need
-
 const Tab = createBottomTabNavigator();
-
 const TabRoot = () => {
   return (
     <Tab.Navigator

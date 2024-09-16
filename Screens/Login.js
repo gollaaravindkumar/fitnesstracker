@@ -18,7 +18,7 @@ export default function AuthScreen({ navigation }) {
     }
 
     try {
-      const response = await axios.post(`https://ngage.nexalink.co/health/login`, { email, password });
+      const response = await axios.post('https://ngage.nexalink.co/health/login', { email, password });
       // If login is successful, navigate to Home screen
       navigation.replace('RootTab');
     } catch (error) {
@@ -71,7 +71,7 @@ export default function AuthScreen({ navigation }) {
     }
 
     try {
-      const response = await axios.post(`https://ngage.nexalink.co/health/loginotp`, { email, otp: otpCode }); // Changed endpoint to `/verifyotp`
+      const response = await axios.post('https://ngage.nexalink.co/health/loginotp', { email, otp: otpCode }); // Changed endpoint to `/verifyotp`
       // If OTP is verified, navigate to Home screen
       navigation.replace('RootTab');
     } catch (error) {
@@ -86,7 +86,7 @@ export default function AuthScreen({ navigation }) {
     }
 
     try {
-      await axios.post(`https://ngage.nexalink.co/health/passwordchange`, { email });
+      await axios.post('https://ngage.nexalink.co/health/passwordchange', { email });
       Alert.alert('Success', 'Password reset link sent to your email.');
       setActiveTab('login');
     } catch (error) {

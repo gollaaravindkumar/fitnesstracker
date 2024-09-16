@@ -7,7 +7,7 @@ const MainUser = () => {
   const LeaderBoardData = [
     {
       id: 1,
-      name: "Harsha",
+      name: "Aravind Team",
       steps: totalSteps, // High value to ensure Harsha is always at the top
       image: "https://randomuser.me/api/portraits/men/1.jpg",
     }

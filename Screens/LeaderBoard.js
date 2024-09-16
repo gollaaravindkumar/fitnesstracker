@@ -35,7 +35,7 @@ const LeaderBoard = () => {
     // Fetch data or use a static example
     // Example static data
     setLeaderBoardData([
-      { id: 1, name: "Harsha", steps: totalSteps, image: "https://randomuser.me/api/portraits/men/1.jpg" },
+      { id: 1, name: "Aravind Team", steps: totalSteps, image: "https://randomuser.me/api/portraits/men/1.jpg" },
       { id: 2, name: "John Doe", steps: 600, image: "https://randomuser.me/api/portraits/men/5.jpg" },
       { id: 3, name: "Jane Smith", steps: 500, image: "https://randomuser.me/api/portraits/women/6.jpg" },
       { id: 4, name: "Chris Evans", steps: 400, image: "https://randomuser.me/api/portraits/men/7.jpg" },

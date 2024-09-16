@@ -65,8 +65,8 @@ const HomeScreen = ({ route, navigation }) => {
     };
 
     saveUserData();
-  }, [name, age]);
-  
+  }, );
+
   useEffect(() => {
     const loadStepsData = async () => {
       try {
@@ -121,7 +121,7 @@ const HomeScreen = ({ route, navigation }) => {
       return false;
     }
   };
-  
+
   useEffect(() => {
     const subscribeToPedometer = async () => {
       const hasPermission = await requestActivityPermission();
@@ -129,7 +129,7 @@ const HomeScreen = ({ route, navigation }) => {
         Alert.alert('Permission Denied', 'Cannot access step count without permission.');
         return;
       }
-  
+
       const isAvailable = await Pedometer.isAvailableAsync();
       console.log("Pedometer Available:", isAvailable);
       if (isAvailable) {
@@ -154,16 +154,16 @@ const HomeScreen = ({ route, navigation }) => {
         Alert.alert('Error', 'Pedometer is not available on this device');
       }
     };
-  
+
     subscribeToPedometer();
-  
+
     return () => {
       if (pedometerSubscriptionRef.current && typeof pedometerSubscriptionRef.current.remove === 'function') {
         pedometerSubscriptionRef.current.remove();
       }
     };
   }, []);
-  
+
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -207,8 +207,8 @@ const HomeScreen = ({ route, navigation }) => {
 
   const renderContent = () => (
     <View style={styles.container}>
-      <Text>Welcome, {name}!</Text>
-      <Text>Age: {age}</Text>
+      {/* <Text>Welcome, {name}!</Text>
+      <Text>Age: {age}</Text> */}
       <Text style={styles.header}>Home Screen</Text>
       <Text style={styles.stat}>Current Step Count: {currentStepCount}</Text>
       <Text style={styles.stat}>Daily Steps: {dailySteps}</Text>
@@ -232,7 +232,7 @@ const HomeScreen = ({ route, navigation }) => {
       </View>
     </View>
   );
-  
+
   return isLoading ? (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color="#0000ff" />
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   footer: {
-    height: 20, 
+    height: 20,
   },
 });
 
